@@ -9,12 +9,15 @@ import java.net.Socket;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
+import org.apache.log4j.Logger;
+import org.apache.log4j.LogManager;
 
 public class Server {
     private ServerSocket socket;
     private final int portNumber = 8000;
     private final AuthenticationService authService;
     private final Set<ClientHandler> clients;
+    private static Logger logger = LogManager.getLogger("serversideChatLogger");
 
     public Server(){
         authService = new AuthenticationService();
@@ -22,12 +25,11 @@ public class Server {
 
         try {
             socket = new ServerSocket(portNumber);
-            System.out.println("Сервер запущен");
+            logger.info("Сервер запущен");
             run();
         }
         catch (IOException e){
-            System.out.printf("Can't initialize server! Exception: %s%n", e.getMessage());
-            e.printStackTrace();
+            logger.fatal(String.format("Can't initialize server! Exception: %s%n", e.getMessage()), e);
         }
     }
 
@@ -38,8 +40,7 @@ public class Server {
                 new ClientHandler(this, client);
             }
             catch (IOException e){
-                System.out.printf("Can't accept client! Exception: %s%n", e.getMessage());
-                e.printStackTrace();
+                logger.error(String.format("Can't accept client! Exception: %s%n", e.getMessage()), e);
             }
         }
     }
@@ -89,6 +90,11 @@ public class Server {
         }
         catch (IOException e){
             unsubscribe(client);
+            logger.error(String.format("Не получилось отправить сообщение клиенту %s", client.getUser().getLogin()), e);
         }
+    }
+
+    public static Logger getLogger() {
+        return logger;
     }
 }
