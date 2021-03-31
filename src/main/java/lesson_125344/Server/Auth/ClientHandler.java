@@ -31,7 +31,12 @@ public class ClientHandler extends IO {
                     server.unsubscribe(this);
                     if (user != null) {
                         server.broadcast(String.format("Пользователь %s вышел в чат%n", user.getName()));
+                        Server.getLogger().warn(String.format("Пользователь %s вышел из чата", user.getLogin()), e);
                     }
+                    else{
+                        Server.getLogger().warn("Пользователь вышел из чата", e);
+                    }
+
                     throw new RuntimeException(e.getMessage(), e);
                 }
             });
@@ -71,6 +76,7 @@ public class ClientHandler extends IO {
                             server.broadcast(String.format("Пользователь %s вошёл в чат%n", user.getName()));
                             server.subscribe(this);
                             sendMessage(String.format("-auth %s", user.getName()));
+                            Server.getLogger().info(String.format("Клиент %s вошёл.", user.getLogin()));
                             return;
                         }
                         else {
@@ -105,6 +111,7 @@ public class ClientHandler extends IO {
                 String newMessage = String.join(" ", newMessagePieces);
                 sendMessage(String.format("%s: %s", user.getName(), message));
                 server.sendDirectMessage(messagePieces[1], String.format("%s (только вам): %s", user.getName(), newMessage));
+                Server.getLogger().info(String.format("Клиент %s послал сообщение клиенту %s: %s.", user.getLogin(), messagePieces[1], newMessage));
             }
             else {
                 sendMessage("Сообщение должно содержать имя пользователя");
@@ -112,7 +119,8 @@ public class ClientHandler extends IO {
         }
         else if (message.startsWith("-close")) {
             server.unsubscribe(this);
-            server.broadcast(String.format("Пользователь %s вышел в чат%n", user.getName()));
+            server.broadcast(String.format("Пользователь %s вышел из чата%n", user.getName()));
+            Server.getLogger().info(String.format("Пользователь %s вышел из чата", user.getLogin()));
             sendMessage("-close");
             auth();
         }
@@ -121,6 +129,7 @@ public class ClientHandler extends IO {
             if (messagePieces.length >= 2) {
                 if (server.getAuthService().changeUserName(user, messagePieces[1])) {
                     sendMessage("Ваш никнейм изменён");
+                    Server.getLogger().info(String.format("Никнейм пользователя %s изменён на %s", user.getLogin(), messagePieces[1]));
                 }
                 else {
                     sendMessage("Изменить никнейм не удалось");
@@ -132,6 +141,7 @@ public class ClientHandler extends IO {
         }
         else {
             server.broadcast(String.format("%s: %s", user.getName(), message));
+            Server.getLogger().info(String.format("Пользователь %s отправил сообщение: %s", user.getLogin(), message));
         }
     }
 
@@ -143,17 +153,16 @@ public class ClientHandler extends IO {
                     sendMessage("Вы бездействовали слишком долго, сервер разрывает соединение");
                 }
                 catch (IOException e) {
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    Server.getLogger().warn(e.getMessage(), e);
                 }
 
                 try {
                     clientSocket.close(); //По идее должно завершить всё остальное, потмоу что потоки данных будут прекращщены
                 }
                 catch (IOException e) {
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    Server.getLogger().warn(e.getMessage(), e);
                 }
+                Server.getLogger().info("Пользователь отключён от чата");
             }
         }
     }
